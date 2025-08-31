@@ -30,7 +30,7 @@ export default function Modal({
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative z-[101] w-full max-w-md rounded-2xl bg-white p-4 shadow-xl">
+      <div className="relative z-[101] w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
         {children}
       </div>
     </div>,

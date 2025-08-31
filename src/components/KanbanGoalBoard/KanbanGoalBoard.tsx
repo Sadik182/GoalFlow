@@ -6,110 +6,15 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  useDroppable,
+  closestCorners, // ✅ use better collision strategy
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { Goal, Status } from "@/types/goal";
 import { toWeekKey } from "@/lib/week";
 import WeekSwitcher from "@/components/WeekSwitcher/WeekSwitcher";
 import AddGoalForm from "@/components/AddGoalForm/AddGoalForm";
 import { FaReact } from "react-icons/fa";
-import Modal from "../Modal/Modal";
-
-// ---- Card & Column unchanged ----
-function Card({
-  goal,
-  onEdit,
-  onDelete,
-}: {
-  goal: Goal;
-  onEdit: (g: Goal) => void;
-  onDelete: (id: string) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: goal._id! });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  } as React.CSSProperties;
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="p-3 rounded-xl bg-white border shadow-sm space-y-1 cursor-grab active:cursor-grabbing"
-    >
-      <div className="font-medium">{goal.title}</div>
-      {goal.description && (
-        <div className="text-sm text-gray-600">{goal.description}</div>
-      )}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        {goal.dueDate && (
-          <span>Due {new Date(goal.dueDate).toLocaleDateString()}</span>
-        )}
-        <div className="flex gap-2">
-          <button onClick={() => onEdit(goal)} className="underline">
-            Edit
-          </button>
-          <button
-            onClick={() => onDelete(goal._id!)}
-            className="underline text-red-600"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Column({
-  id,
-  title,
-  items,
-  onEdit,
-  onDelete,
-}: {
-  id: Status;
-  title: string;
-  items: Goal[];
-  onEdit: (g: Goal) => void;
-  onDelete: (id: string) => void;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-    data: { type: "container" },
-  });
-  return (
-    <div className="flex-1 min-w-[300px]">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold">{title}</h3>
-        <span className="text-xs text-gray-500">{items.length}</span>
-      </div>
-      <div
-        ref={setNodeRef}
-        className={`space-y-3 p-2 rounded-xl min-h-[200px] border ${
-          isOver ? "bg-gray-50" : "bg-transparent"
-        }`}
-      >
-        <SortableContext
-          items={items.map((i) => i._id!)}
-          strategy={verticalListSortingStrategy}
-        >
-          {items.map((g) => (
-            <Card key={g._id} goal={g} onEdit={onEdit} onDelete={onDelete} />
-          ))}
-        </SortableContext>
-      </div>
-    </div>
-  );
-}
+import Modal from "@/components/Modal/Modal";
+import Column from "@/components/Kanban/Column";
 
 export default function KanbanBoard() {
   const [weekKey, setWeekKey] = useState<string>(toWeekKey());
@@ -131,6 +36,7 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     fetchGoals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekKey]);
 
   const byStatus = useMemo(
@@ -195,14 +101,21 @@ export default function KanbanBoard() {
     const dragged = goals.find((g) => g._id === activeId);
     if (!dragged) return;
 
-    let targetStatus: Status | null = null;
+    // Determine target column
     const overGoal = goals.find((g) => g._id === overId);
-    if (overGoal) targetStatus = overGoal.status;
-    else if (over.data?.current?.type === "container")
+    const containerIds: Status[] = ["todo", "in-progress", "done"];
+
+    let targetStatus: Status | null = null;
+    if (overGoal) {
+      targetStatus = overGoal.status as Status;
+    } else if (containerIds.includes(overId as Status)) {
       targetStatus = overId as Status;
+    } else if (over.data?.current?.type === "container") {
+      targetStatus = (over.data.current.status ?? overId) as Status;
+    }
     if (!targetStatus) return;
 
-    const sourceStatus = dragged.status;
+    const sourceStatus = dragged.status as Status;
 
     const lists: Record<Status, Goal[]> = {
       todo: [...byStatus.todo],
@@ -211,17 +124,17 @@ export default function KanbanBoard() {
     };
 
     // Remove from source
-    const sourceList = lists[sourceStatus];
-    const fromIndex = sourceList.findIndex((g) => g._id === activeId);
-    const [removed] = sourceList.splice(fromIndex, 1);
+    const src = lists[sourceStatus];
+    const fromIndex = src.findIndex((g) => g._id === activeId);
+    const [removed] = src.splice(fromIndex, 1);
 
-    // Insert into target
-    const targetList = lists[targetStatus];
-    let insertIndex = targetList.length;
-    if (overGoal) insertIndex = targetList.findIndex((g) => g._id === overId);
-    targetList.splice(insertIndex, 0, { ...removed, status: targetStatus });
+    // Insert into target (before the hovered goal if present)
+    const tgt = lists[targetStatus];
+    let insertIndex = tgt.length;
+    if (overGoal) insertIndex = tgt.findIndex((g) => g._id === overId);
+    tgt.splice(insertIndex, 0, { ...removed, status: targetStatus });
 
-    // Normalize order per column (1000, 2000, ...)
+    // Normalize order per column (1000, 2000, …)
     const normalize = (arr: Goal[]) =>
       arr.map((g, i) => ({ ...g, order: (i + 1) * 1000 }));
     const nextTodo = normalize(lists.todo);
@@ -257,8 +170,12 @@ export default function KanbanBoard() {
         {loading ? (
           <div className="text-sm text-gray-500">Loading goals…</div>
         ) : (
-          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-start">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners} // ✅ key for cross-column
+            onDragEnd={onDragEnd}
+          >
+            <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
               <Column
                 id="todo"
                 title="To Do"
@@ -289,8 +206,8 @@ export default function KanbanBoard() {
       <Modal open={open} onClose={() => setOpen(false)}>
         <AddGoalForm
           weekKey={weekKey}
-          onCreated={() => fetchGoals()} // ✅ refresh Kanban after add
-          onClose={() => setOpen(false)} // ✅ close modal after add/cancel
+          onCreated={() => fetchGoals()} // refresh Kanban after add
+          onClose={() => setOpen(false)} // close modal after add/cancel
         />
       </Modal>
     </>

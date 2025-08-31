@@ -56,13 +56,13 @@ export default function AddGoalForm({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
+      <input
+        type="date"
+        className="w-full rounded-lg border px-3 py-2"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+      />
       <div className="flex items-center gap-2">
-        <input
-          type="date"
-          className="rounded-lg border px-3 py-2"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
         <div className="ml-auto flex gap-2">
           <button
             type="button"
