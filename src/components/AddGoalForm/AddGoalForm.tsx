@@ -4,9 +4,11 @@ import { useState } from "react";
 export default function AddGoalForm({
   weekKey,
   onCreated,
+  onClose,
 }: {
   weekKey: string;
   onCreated: () => void;
+  onClose: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -16,37 +18,40 @@ export default function AddGoalForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setLoading(true);
-    await fetch(`/api/goals`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        description,
-        weekKey,
-        dueDate: dueDate || undefined,
-      }),
-    });
-    setTitle("");
-    setDescription("");
-    setDueDate("");
-    setLoading(false);
-    onCreated();
+    try {
+      setLoading(true);
+      await fetch(`/api/goals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          weekKey,
+          dueDate: dueDate || undefined,
+        }),
+      });
+      setTitle("");
+      setDescription("");
+      setDueDate("");
+      onCreated(); // e.g., refetch Kanban data
+      onClose(); // close modal
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <form
-      onSubmit={submit}
-      className="p-3 border rounded-xl bg-white shadow-sm space-y-2"
-    >
+    <form onSubmit={submit} className="space-y-3">
+      <h3 className="text-lg font-semibold">Add New Goal</h3>
       <input
-        className="w-full border rounded px-3 py-2"
+        className="w-full rounded-lg border px-3 py-2"
         placeholder="New goal title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        autoFocus
       />
       <textarea
-        className="w-full border rounded px-3 py-2"
+        className="w-full rounded-lg border px-3 py-2"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -54,16 +59,26 @@ export default function AddGoalForm({
       <div className="flex items-center gap-2">
         <input
           type="date"
-          className="border rounded px-3 py-2"
+          className="rounded-lg border px-3 py-2"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
-        <button
-          disabled={loading}
-          className="px-4 py-2 rounded bg-black text-white"
-        >
-          {loading ? "Adding..." : "Add Goal"}
-        </button>
+        <div className="ml-auto flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border px-4 py-2"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            disabled={loading}
+            className="rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60"
+          >
+            {loading ? "Adding..." : "Add Goal"}
+          </button>
+        </div>
       </div>
     </form>
   );

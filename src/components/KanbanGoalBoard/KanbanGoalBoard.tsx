@@ -18,7 +18,10 @@ import type { Goal, Status } from "@/types/goal";
 import { toWeekKey } from "@/lib/week";
 import WeekSwitcher from "@/components/WeekSwitcher/WeekSwitcher";
 import AddGoalForm from "@/components/AddGoalForm/AddGoalForm";
+import { FaReact } from "react-icons/fa";
+import Modal from "../Modal/Modal";
 
+// ---- Card & Column unchanged ----
 function Card({
   goal,
   onEdit,
@@ -112,6 +115,7 @@ export default function KanbanBoard() {
   const [weekKey, setWeekKey] = useState<string>(toWeekKey());
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -234,43 +238,61 @@ export default function KanbanBoard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">GoalFlow – Weekly Goals</h1>
-        <WeekSwitcher weekKey={weekKey} onChange={(wk) => setWeekKey(wk)} />
+    <>
+      <div className="space-y-6 px-4">
+        <div className="flex items-center justify-between">
+          <WeekSwitcher weekKey={weekKey} onChange={(wk) => setWeekKey(wk)} />
+
+          <div>
+            <button
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium shadow-sm hover:bg-gray-100 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-black/20"
+            >
+              <FaReact className="h-5 w-5 animate-spin" />
+              <span>Add New Goal</span>
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-sm text-gray-500">Loading goals…</div>
+        ) : (
+          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-start">
+              <Column
+                id="todo"
+                title="To Do"
+                items={byStatus.todo}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+              <Column
+                id="in-progress"
+                title="In Progress"
+                items={byStatus["in-progress"]}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+              <Column
+                id="done"
+                title="Done"
+                items={byStatus.done}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </div>
+          </DndContext>
+        )}
       </div>
 
-      <AddGoalForm weekKey={weekKey} onCreated={() => fetchGoals()} />
-
-      {loading ? (
-        <div className="text-sm text-gray-500">Loading goals…</div>
-      ) : (
-        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-            <Column
-              id="todo"
-              title="To Do"
-              items={byStatus.todo}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-            <Column
-              id="in-progress"
-              title="In Progress"
-              items={byStatus["in-progress"]}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-            <Column
-              id="done"
-              title="Done"
-              items={byStatus.done}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          </div>
-        </DndContext>
-      )}
-    </div>
+      {/* Modal with the form */}
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <AddGoalForm
+          weekKey={weekKey}
+          onCreated={() => fetchGoals()} // ✅ refresh Kanban after add
+          onClose={() => setOpen(false)} // ✅ close modal after add/cancel
+        />
+      </Modal>
+    </>
   );
 }
