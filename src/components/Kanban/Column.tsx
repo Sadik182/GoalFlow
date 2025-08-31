@@ -26,7 +26,7 @@ export default function Column({
   });
 
   return (
-    <section className="flex-1 min-w-[300px]">
+    <section className="flex-1 min-w-[300px] min-h-0">
       <div className="mb-2 flex items-center justify-between px-2">
         <h3 className="text-lg font-bold text-gray-700">{title}</h3>
         <span className="text-sm text-gray-400 font-bold">{items.length}</span>
@@ -34,9 +34,9 @@ export default function Column({
 
       <div
         ref={setNodeRef}
-        className={`min-h-[590px] select-none rounded-2xl border border-gray-400 p-3 transition-colors overflow-y-auto max-h-[70vh]${
-          isOver ? "border-sky-400 bg-sky-50" : "border-gray-200 bg-gray-50"
-        }`}
+        className={`select-none rounded-2xl border p-3 transition-colors
+         overflow-y-auto h-[70vh] overscroll-contain pr-2
+        ${isOver ? "border-sky-400 bg-sky-50" : "border-gray-200 bg-gray-50"}`}
       >
         <SortableContext
           items={items.map((i) => i._id!)}

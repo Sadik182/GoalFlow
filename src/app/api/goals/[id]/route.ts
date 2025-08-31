@@ -7,15 +7,12 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 // PATCH /api/goals/:id
-// Accepts:
-// - { title?, description? }   -> edit text
-// - { status?, order? }        -> move/reorder
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await context.params; // ✅ await params
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { ok: false, error: "Invalid id" },
@@ -28,7 +25,7 @@ export async function PATCH(
     if (typeof body.title === "string") update.title = body.title.trim();
     if (typeof body.description === "string")
       update.description = body.description.trim();
-    if (typeof body.status === "string") update.status = body.status; // "todo" | "in-progress" | "done"
+    if (typeof body.status === "string") update.status = body.status;
     if (typeof body.order === "number") update.order = body.order;
 
     if (!Object.keys(update).length) {
@@ -65,10 +62,10 @@ export async function PATCH(
 // DELETE /api/goals/:id
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await context.params; // ✅ await params
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { ok: false, error: "Invalid id" },
