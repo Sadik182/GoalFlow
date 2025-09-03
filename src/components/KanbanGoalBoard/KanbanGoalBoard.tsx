@@ -12,7 +12,7 @@ import type { Goal, Status } from "@/types/goal";
 import { toWeekKey } from "@/lib/week";
 import WeekSwitcher from "@/components/WeekSwitcher/WeekSwitcher";
 import AddGoalForm from "@/components/AddGoalForm/AddGoalForm";
-import { FaReact } from "react-icons/fa";
+import { FaReact, FaPlus } from "react-icons/fa";
 import Modal from "@/components/Modal/Modal";
 import Column from "@/components/Kanban/Column";
 
@@ -159,9 +159,14 @@ export default function KanbanBoard() {
           <div>
             <button
               onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium shadow-sm hover:bg-gray-100 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-black/20"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-600/10
+             hover:bg-emerald-700 hover:shadow
+             active:bg-emerald-800 active:shadow-sm
+             focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60
+             disabled:opacity-60 disabled:cursor-not-allowed
+             transition-colors cursor-pointer"
             >
-              <FaReact className="h-5 w-5 animate-spin" />
+              <FaPlus className="h-4 w-4" aria-hidden />
               <span>Add New Goal</span>
             </button>
           </div>
