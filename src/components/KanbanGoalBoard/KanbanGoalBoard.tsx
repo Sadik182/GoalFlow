@@ -15,12 +15,14 @@ import AddGoalForm from "@/components/AddGoalForm/AddGoalForm";
 import { FaReact, FaPlus } from "react-icons/fa";
 import Modal from "@/components/Modal/Modal";
 import Column from "@/components/Kanban/Column";
+import EditGoalForm from "@/components/EditGoalForm/EditGoalForm";
 
 export default function KanbanBoard() {
   const [weekKey, setWeekKey] = useState<string>(toWeekKey());
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Goal | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -73,22 +75,8 @@ export default function KanbanBoard() {
     if (!res.ok) setGoals(prev);
   };
 
-  const onEdit = async (g: Goal) => {
-    const title = window.prompt("Edit title", g.title);
-    if (title == null) return;
-    const description =
-      window.prompt("Edit description", g.description || "") || "";
-    const prev = goals;
-    const next = goals.map((x) =>
-      x._id === g._id ? { ...x, title, description } : x
-    );
-    setGoals(next);
-    const res = await fetch(`/api/goals/${g._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description }),
-    });
-    if (!res.ok) setGoals(prev);
+  const onEdit = (g: Goal) => {
+    setEditing(g);
   };
 
   const onDragEnd = async (event: DragEndEvent) => {
@@ -206,7 +194,6 @@ export default function KanbanBoard() {
           </DndContext>
         )}
       </div>
-
       {/* Modal with the form */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <AddGoalForm
@@ -214,6 +201,16 @@ export default function KanbanBoard() {
           onCreated={() => fetchGoals()} // refresh Kanban after add
           onClose={() => setOpen(false)} // close modal after add/cancel
         />
+      </Modal>
+      {/* Edit Modal with the form */}
+      <Modal open={!!editing} onClose={() => setEditing(null)}>
+        {editing ? (
+          <EditGoalForm
+            goal={editing}
+            onSaved={() => fetchGoals()} // refresh Kanban after edit
+            onClose={() => setEditing(null)} // close modal after add/cancel
+          />
+        ) : null}
       </Modal>
     </>
   );
