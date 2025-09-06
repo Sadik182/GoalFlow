@@ -69,6 +69,12 @@ export default function KanbanBoard() {
   };
 
   const onDelete = async (id: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this goal? this action can't be undone"
+      )
+    )
+      return;
     const prev = goals;
     setGoals((gs) => gs.filter((g) => g._id !== id));
     const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
