@@ -1,5 +1,7 @@
+// app/login/page.tsx
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -7,6 +9,15 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { FaGoogle } from "react-icons/fa";
 
 export default function LoginPage() {
+  // Wrap the search-params consumer in Suspense
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const next = sp.get("next") || "/";
@@ -79,7 +90,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Optional SSO button (wire up later if you add OAuth) */}
           <button
             type="button"
             onClick={() => alert("Google sign-in not configured yet.")}
@@ -89,7 +99,6 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t" />
@@ -101,7 +110,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Error */}
           {error ? (
             <div
               role="alert"
@@ -112,7 +120,6 @@ export default function LoginPage() {
             </div>
           ) : null}
 
-          {/* Form */}
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label
@@ -144,7 +151,6 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
-                {/* (Optional) Forgot password */}
                 <Link
                   href="#"
                   className="text-xs text-emerald-700 hover:underline"
