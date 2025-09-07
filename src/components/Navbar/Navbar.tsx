@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaBars,
   FaTimes,
@@ -19,29 +19,52 @@ export default function Navbar() {
   const [navOpen, setNavOpen] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const refreshAuth = async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    try {
+      const res = await fetch("/api/auth/me", {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: ac.signal,
+      });
+      const j = await res.json().catch(() => ({}));
+      setIsAuthed(!!j?.user);
+    } catch {
+      setIsAuthed(false);
+    } finally {
+      setLoadingAuth(false);
+    }
+  };
 
   // Close mobile menu on route change
   useEffect(() => {
     setNavOpen(false);
   }, [pathname]);
 
-  // Fetch auth status once on mount
+  // ✅ check auth on mount + on route change
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        const j = await res.json();
-        if (!cancelled) setIsAuthed(!!j?.user);
-      } catch {
-        if (!cancelled) setIsAuthed(false);
-      } finally {
-        if (!cancelled) setLoadingAuth(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    refreshAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // ✅ also refresh when window regains focus (another tab might have logged in/out)
+  useEffect(() => {
+    const onFocus = () => refreshAuth();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
+  // ✅ optional: listen for cross-tab login/logout signals
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "auth:changed") refreshAuth();
     };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const links = [
@@ -82,6 +105,10 @@ export default function Navbar() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
+      // let others (and this tab on focus) know auth changed
+      try {
+        localStorage.setItem("auth:changed", String(Date.now()));
+      } catch {}
       setIsAuthed(false);
       router.push("/login");
     }
