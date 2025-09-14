@@ -56,7 +56,7 @@ export default function ReportsPage() {
   const COLORS = ["#22c55e", "#06b6d4", "#94a3b8"]; // emerald, cyan, slate
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+    <div className="mx-auto max-w-8xl px-4 py-6 space-y-6">
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-sm text-gray-600">From</label>
