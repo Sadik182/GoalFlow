@@ -128,7 +128,7 @@ export default function ReportsPage() {
         {/* Snapshot: current status distribution */}
         <div className="col-span-2 rounded-2xl border bg-white p-4 shadow-sm">
           <h3 className="mb-3 font-semibold">Current Status</h3>
-          <div className="h-64">
+          <div className="h-74">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -139,7 +139,7 @@ export default function ReportsPage() {
                   nameKey="status"
                   cx="50%"
                   cy="50%"
-                  outerRadius={90}
+                  outerRadius={100}
                   label
                 >
                   {(data?.byStatus ?? []).map((_, idx) => (

@@ -19,6 +19,9 @@ export default function Navbar() {
   const [navOpen, setNavOpen] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [name, setName] = useState<string | null>(null);
+
+  // AbortController ref to cancel ongoing auth fetch if needed
   const abortRef = useRef<AbortController | null>(null);
 
   const refreshAuth = async () => {
@@ -32,9 +35,13 @@ export default function Navbar() {
         signal: ac.signal,
       });
       const j = await res.json().catch(() => ({}));
+      const user = j?.user ?? null;
+      const displayName = user?.email ? user.email.split("@")[0] : "User";
+      setName(j?.name || displayName);
       setIsAuthed(!!j?.user);
     } catch {
       setIsAuthed(false);
+      setName(null);
     } finally {
       setLoadingAuth(false);
     }
@@ -110,6 +117,7 @@ export default function Navbar() {
         localStorage.setItem("auth:changed", String(Date.now()));
       } catch {}
       setIsAuthed(false);
+      setName(null);
       router.push("/login");
     }
   };
@@ -139,13 +147,18 @@ export default function Navbar() {
               …
             </div>
           ) : isAuthed ? (
-            <button
-              onClick={signOut}
-              className="ml-1 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <FaSignOutAlt className="h-4 w-4" />
-              <span>Sign out</span>
-            </button>
+            <div className="ml-1 flex items-center gap-3">
+              <span className="hidden sm:inline text-sm text-gray-600">
+                Hi, {name}
+              </span>
+              <button
+                onClick={signOut}
+                className="ml-1 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
+                <FaSignOutAlt className="h-4 w-4" />
+                <span>Sign out</span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={goSignIn}
